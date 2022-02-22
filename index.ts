@@ -2,12 +2,12 @@ const express = require('express');
 const bodyParser = require("body-parser");
 const { addRoutes } = require("./src/routeManager.js")
 const cors = require("cors");
-const { isValidAction, executeAction, getGamestate, isValidID, awardDailySupplyAndVotes, getSpectatorGamestate } = require("./src/stateMachine.js")
+const { isValidAction, executeAction, getGamestate, isValidID, getSpectatorGamestate } = require("./src/stateMachine.js")
 const schedule = require('node-schedule');
 const { makeBackup, updateCeasefire, addHistoryMessage } = require('./src/database.js');
 
 const http = require('http');
-const socketio = require("socket.io");
+const socketIO = require("socket.io");
 
 const app = express();
 
@@ -18,7 +18,7 @@ app.use(cors())
 
 // websocket
 const server = http.createServer(app);
-const io = socketio(server, {
+const io = socketIO(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
@@ -91,35 +91,6 @@ async function updateAllClientsGamestate() {
     }
   })
 }
-
-////////////// Chron jobs
-
-/// Chron jobs for giving out supply/votes
-const awardJob = schedule.scheduleJob({ hour: process.env.RESUPPLY_TIME, minute: 0 }, async () => {
-  await awardDailySupplyAndVotes();
-  await updateAllClientsGamestate();
-})
-
-//backup on the half hour
-const scheduleBackup = schedule.scheduleJob({ minute: 0 }, async () => {
-  await makeBackup();
-  console.log('backup made', Date.now().toLocaleString())
-})
-
-// Start ceasefire
-const startCeasefire = schedule.scheduleJob({ hour: process.env.CEASEFIRE_START, minute: 0 }, async () => {
-  await updateCeasefire();
-  await addHistoryMessage("Ceasefire started");
-  await updateAllClientsGamestate();
-})
-
-// End ceasefire
-const endCeasefire = schedule.scheduleJob({ hour: process.env.CEASEFIRE_END, minute: 0 }, async () => {
-  await updateCeasefire();
-  await addHistoryMessage("Ceasefire ended. Fire at will.")
-  await updateAllClientsGamestate();
-})
-
 
 app.use(express.static('public'));
 
