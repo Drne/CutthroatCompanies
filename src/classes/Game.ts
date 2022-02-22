@@ -11,13 +11,13 @@ class Game {
     currentContracts: Contract[]
     started: boolean
 
-    constructor() {
-        this.id = generateRandomID(5)
+    constructor(id: string = generateRandomID(5), players = [], executedContracts = [], currentContracts = [], started = false) {
+        this.id = id
         // TODO: Repopulate with AI players
-        this.players = []
-        this.executedContracts = []
-        this.currentContracts = []
-        this.started = false
+        this.players = players
+        this.executedContracts = executedContracts
+        this.currentContracts = currentContracts
+        this.started = started
     }
 
     startGame(): void {
@@ -29,8 +29,12 @@ class Game {
         this.players.push(player)
     }
 
-    getPlayerById(id: string): Player | null {
+    getPlayerById(id: string): Player {
         return this.players.find(p => p.id === id)
+    }
+
+    getPlayerByName(name: string): Player {
+        return this.players.find(p => p.name === name)
     }
 
     // Contract Methods //
@@ -77,7 +81,7 @@ class Game {
                     throw Error("Unable to find player with ID: " + action.actingPlayerID)
                 }
                 // give bundle to originator player
-                const originator = this.getPlayerById(action.contract.playerID)
+                const originator = this.getPlayerById(action.contract.offeringPlayerID)
                 if (originator) {
                     completer.addResourceBundle(action.contract.desiredBundle)
                 } else {

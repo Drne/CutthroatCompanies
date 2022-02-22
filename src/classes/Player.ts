@@ -1,4 +1,4 @@
-import {ResourceBundle } from "./ResourceBundle";
+import {ResourceBundle} from "./ResourceBundle";
 
 export class Player {
     id: string
@@ -21,8 +21,12 @@ export class Player {
         }
     }
 
-    fromJSON(obj: Object): Player {
-        return new Player()
+    static fromJSON(obj: any): Player {
+        const resourceBundle = ResourceBundle.fromJson(obj.resourceBundle)
+        const id = obj.id
+        const name = obj.name
+        const logo = obj.logo
+        return new Player(id, name, logo, resourceBundle)
     }
 
     addResourceBundle(resourceBundle: ResourceBundle): void {

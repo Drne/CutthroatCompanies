@@ -10,29 +10,33 @@ const createNewGame = (): Game => {
 
 const startNewGame =  async (): Promise<Game> => {
     const game = createNewGame()
-
+    game.startGame()
     await db.set(game.id, game)
     return game;
 }
 
-const getGameByID = async (id: string): Promise<Game> => {
+export const getGameByID = async (id: string): Promise<Game> => {
     const game = <Game>(await db.get(id))
 
     if (!game) {
         throw Error("Tried to get invalid game id")
     }
-
     return game
 }
 
-const getGameState = async (gameID): Promise<any> => {
+export const saveGame = async (game: Game) => {
+    await db.set(game.id, game);
+}
+
+export const getGameState = async (gameID): Promise<any> => {
+    // TODO: sanitize player IDs from gamestate
     return await db.get(gameID)
 }
 
-async function makeBackup(gameID) {
+export async function makeBackup(gameID) {
     const gameState = db.get(gameID)
 
-    const currentBackups = db.get(gameID + 'backups');
+    const currentBackups = db.get(gameID + '|backups');
     if (currentBackups['1Hour']) {
         currentBackups['2Hour'] = { ...currentBackups['1Hour'] };
     }
@@ -40,33 +44,23 @@ async function makeBackup(gameID) {
     await db.set('backups', currentBackups);
 }
 
-async function restoreFromBackup(time) {
-    const backups = await db.get('backups');
+export async function restoreFromBackup(gameId, time) {
+    const backups = await db.get(gameId + '|backups');
     const backupData = backups[time];
-    await db.set('history', backupData.history);
-    await db.set('users', backupData.users);
-    await addHistoryMessage('Gamestate restored from backup')
+    await db.set(gameId, backupData)
+    // await addHistoryMessage('Gamestate restored from backup')
 }
 
-async function isIdInDb(id) {
-    const user = await getUser(id);
-    return !!user;
+export async function isPlayerIDIsInUse(gameId, playerId): Promise<boolean> {
+    const game = await getGameByID(gameId)
+    return !!game.players.filter((player: Player) => player.id === playerId)
 }
 
-module.exports = {
-    setupGame,
-    getUser,
-    getUserByName,
-    getAllUsers,
-    updateUser,
-    addUser,
-    getGameState,
-    isIdInDb,
-    setUsers,
-    addToHistory,
-    addHistoryMessage,
-    restoreFromBackup,
-    makeBackup,
-    updateUserData,
-    removeUser,
+export async function isGameIDIsInUse(gameId): Promise<boolean> {
+    try {
+        await getGameByID(gameId)
+        return true
+    } catch (e) {
+        return false
+    }
 }

@@ -10,6 +10,7 @@ function generateRandomID(length: number) {
     return result;
 }
 
+
 module.exports = {
     generateRandomID
 }

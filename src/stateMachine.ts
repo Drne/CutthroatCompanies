@@ -1,67 +1,55 @@
+import {Game} from "./classes/Game"
+import {generateRandomID} from "./utilities";
+import {getGameByID, getGameState, isPlayerIDIsInUse, saveGame} from "./database"
+import {Player} from "./classes/Player";
+import {GameAction} from "./types";
 
-/////////// Actions
-
-const isValidAction = async (action, actor) => {
-
+export const createNewGame = async (): Promise<string> => {
+    const game = new Game();
+    await saveGame(game)
+    return game.id
 }
 
-const executeAction = async (action, actor) => {
-
+export const getGamestate = async (gameId): Promise<Game> => {
+    return await getGameState(gameId);
 }
 
-const getGamestate = async (id) => {
-    const gamestate = await getGameState(id);
-    return gamestate;
-}
+export const addPlayer = async (gameID, playerName, playerLogo): Promise<string> => {
+    let playerID = generateRandomID(5);
 
-const getSpectatorGamestate = async () => {
-    const spectatorGamestate = await getGameState();
-    return spectatorGamestate;
-}
-
-const addPlayer = async () => {
-    const playerID = generateRandomID();
-    await addUser(playerID);
-    return playerID;
-}
-
-const registerPlayer = async (id, name) => {
-    const userData = await getUser(id)
-    const userWithName = await getUserByName(name);
-    if (userWithName) {
-        throw Error();
+    while (await isPlayerIDIsInUse(gameID, playerID)) {
+        playerID = generateRandomID(5)
     }
-    const randomPosition = await getRandomPosition()
-    await updateUser(id, { ...userData, name, position: randomPosition })
-    await addHistoryMessage(`${name} has joined the game`)
+
+    const game = await getGameByID(gameID)
+    const newPlayer = new Player(playerID, playerName, playerLogo)
+    game.addPlayer(newPlayer)
+
+    await saveGame(game)
+    return newPlayer.id
 }
 
-const generateRandomNumber = (upperBound) => {
-    return Math.floor(Math.random() *
-        upperBound)
+export const handleGameAction = async (gameId: string, gameAction: GameAction): Promise<boolean> => {
+    const game = await getGameByID(gameId)
+    return game.handleAction(gameAction)
 }
 
-const playerCanTakeAction = async (id) => {
-
+export const doesPlayerExist = async (gameId: string, playerId): Promise<boolean> => {
+    const game = await getGameByID(gameId)
+    const player = await game.getPlayerById(playerId)
+    return !!player
 }
 
-function isValidID(id) {
-    return isIdInDb(id);
-}
-
-async function isNameTaken(name) {
-    const matchingUser = await getUserByName(name);
+export async function isNameTaken(gameId, name) {
+    const game = await getGameByID(gameId)
+    const matchingUser = await game.getPlayerByName(name);
     return !!matchingUser
 }
 
-module.exports = {
-    playerCanTakeAction,
-    registerPlayer,
-    addPlayer,
-    executeAction,
-    isValidAction,
-    getGamestate,
-    isValidID,
-    isNameTaken,
-    getSpectatorGamestate
+export async function restoreFromBackup(gameId: string, time: string) {
+    try {
+
+    } catch (e) {
+
+    }
 }

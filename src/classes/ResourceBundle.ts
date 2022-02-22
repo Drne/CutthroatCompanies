@@ -1,3 +1,5 @@
+import {BundleType} from "../types";
+
 export enum Resource {
     money="money",
     square="square",
@@ -6,8 +8,6 @@ export enum Resource {
     squareToCircleEngine="squareToCircleEngine",
     controllingInterest="controllingInterest",
 }
-
-type BundleType = Partial<Record<Resource, number>>
 
 export class ResourceBundle {
     bundle: BundleType
@@ -20,6 +20,11 @@ export class ResourceBundle {
         return {
             bundle: this.bundle
         }
+    }
+
+    static fromJson(obj: any): ResourceBundle {
+        const bundle : BundleType = obj.bundle
+        return new ResourceBundle(bundle)
     }
 
     // is this bundle a subset of the given bundle

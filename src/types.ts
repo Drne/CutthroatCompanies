@@ -1,13 +1,5 @@
-import {ResourceBundle} from "./classes/ResourceBundle";
-
-export interface Contract {
-    id: string
-    offeredBundle: ResourceBundle
-    desiredBundle: ResourceBundle
-    alternativeContracts: Contract[]
-    // givenOffers: ResourceBundle[], ???
-    playerID: string,
-}
+import {Resource, ResourceBundle} from "./classes/ResourceBundle";
+import {Contract} from "./classes/Contract";
 
 export interface ExecutedContract {
     executedOffer: ResourceBundle,
@@ -24,5 +16,25 @@ export enum GameActionType {
 export interface GameAction {
     type: GameActionType
     contract: Contract
+    actingPlayerID: string
+}
+
+export type BundleType = Partial<Record<Resource, number>>
+
+export interface ResourceBundleJSON {
+    bundle: BundleType
+}
+
+export interface ContractJSON {
+    id: string
+    offeredBundle: ResourceBundle
+    desiredBundle: ResourceBundle
+    alternativeContracts: ContractJSON[]
+    offeringPlayerID: string
+}
+
+export interface GameActionJSON {
+    type: GameActionType,
+    contract: ContractJSON,
     actingPlayerID: string
 }

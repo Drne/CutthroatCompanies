@@ -1,59 +1,63 @@
-const { addPlayer, registerPlayer, getGamestate, isValidID, isNameTaken, getSpectatorGamestate } = require("./stateMachine.js")
-const { restoreFromBackup, updateUserData, removeUser } = require("./database.js")
+import {getGameByID, getGameState, isGameIDIsInUse} from "./database";
+import {addPlayer, createNewGame, isNameTaken, restoreFromBackup} from "./stateMachine";
 
-const addRoutes = (app, updateUsers, unlogId) => {
+export const addRoutes = (app, updateUsers) => {
     app.get('/', (req, res) => {
         res.send('Cutthroat Companies!');
     });
 
-    // Player info
-    app.get('/api/gameState/:id', async (req, res) => {
-        const idIsValid = await isValidID(req.params.id);
-        if (req.params.id === 'spectator') {
-            const gameState = await getSpectatorGamestate();
-            res.send(gameState);
-        } else if (!idIsValid) {
-            res.sendStatus(404);
-        } else {
-            const users = await getGamestate(req.params.id)
-            res.send(users);
+    // Get game state
+    app.get('/api/game/:gameId', async (req, res) => {
+        const game = await getGameByID(req.params.gameId)
+        if (!!game) {
+            res.sendStatus(404)
+            return;
+        }
+
+        const gameState = getGameState(req.params.gameID)
+        res.send(gameState)
+    });
+
+    // Create new game
+    app.put('/api/game/newGame', async (req, res) => {
+        try {
+            const gameId = await createNewGame()
+            res.send(gameId)
+        } catch (error) {
+            console.log(error)
+            res.sendStatus(500);
         }
     });
 
-    // Register player
-    app.put('/api/register/:id', async (req, res) => {
+    // Add new player to game
+    app.put('/api/game/:gameId/newPlayer', async (req, res) => {
         try {
-            await registerPlayer(req.params.id, req.body.name)
-            res.sendStatus(200);
-            await updateUsers();
+            const { name, logo} = req.body
+            const gameId = req.params.gameId;
+            const playerId = await addPlayer(gameId, name, logo)
+            res.send(playerId)
+            updateUsers();
         } catch (error) {
             console.log(error);
-            res.sendStatus(400);
+            res.sendStatus(500);
         }
     });
 
-    //Generate ID
-    app.get('/api/generate', async (req, res) => {
-        res.send(await addPlayer())
-    })
-
-    // check valid ID
-    app.get('/api/check/:id', async (req, res) => {
-        if (req.params.id === 'spectator') {
+    // check valid game ID
+    app.get('/api/game/:gameId', async (req, res) => {
+        const gameId = req.params.gameId
+        const isGameIdInUse = await isGameIDIsInUse(gameId)
+        if (isGameIdInUse) {
             res.sendStatus(200);
         } else {
-            const idIsValid = await isValidID(req.params.id);
-            if (idIsValid) {
-                res.sendStatus(200);
-            } else {
-                res.sendStatus(404);
-            }
+            res.sendStatus(404);
         }
+
     })
 
     // check if name is taken
-    app.get('/api/nameCheck/:name', async (req, res) => {
-        const isTaken = await isNameTaken(req.params.name);
+    app.get('/api/game/:gameId/player/:playerId', async (req, res) => {
+        const isTaken = await isNameTaken(req.params.gameId, req.params.name);
         if (!isTaken) {
             res.sendStatus(200);
         } else {
@@ -62,9 +66,9 @@ const addRoutes = (app, updateUsers, unlogId) => {
     })
 
     // restore backup
-    app.post('/api/restoreBackup', async (req, res) => {
+    app.post('/api/game/:gameId/backup', async (req, res) => {
         try {
-            await restoreFromBackup(req.body.time);
+            await restoreFromBackup(req.params.gameId, req.body.time);
             res.sendStatus(200);
             await updateUsers();
         } catch {
@@ -73,36 +77,34 @@ const addRoutes = (app, updateUsers, unlogId) => {
     })
 
     // manually set player data
-    app.post('/api/setUserValues', async (req, res) => {
-        try {
-            if (req.body.key === process.env.ADMIN_KEY) {
-                updateUserData(req.body.userId, req.body.userData)
-                res.sendStatus(200);
-                await updateUsers();
-            } else {
-                res.sendStatus(401);
-            }
-        } catch {
-            res.sendStatus(400);
-        }
-    })
+    // app.post('/api/setUserValues', async (req, res) => {
+    //     try {
+    //         if (req.body.key === process.env.ADMIN_KEY) {
+    //             updateUserData(req.body.userId, req.body.userData)
+    //             res.sendStatus(200);
+    //             await updateUsers();
+    //         } else {
+    //             res.sendStatus(401);
+    //         }
+    //     } catch {
+    //         res.sendStatus(400);
+    //     }
+    // })
 
 
     // concede game
-    app.post('/api/concede', async (req, res) => {
-        try {
-            if (req.body.key === process.env.ADMIN_KEY) {
-                await removeUser(req.body.userId);
-                await unlogId(req.body.userId);
-                res.sendStatus(200);
-                await updateUsers();
-            } else {
-                res.sendStatus(401);
-            }
-        } catch {
-            res.sendStatus(400);
-        }
-    })
+    // app.post('/api/concede', async (req, res) => {
+    //     try {
+    //         if (req.body.key === process.env.ADMIN_KEY) {
+    //             await removeUser(req.body.userId);
+    //             await unlogId(req.body.userId);
+    //             res.sendStatus(200);
+    //             await updateUsers();
+    //         } else {
+    //             res.sendStatus(401);
+    //         }
+    //     } catch {
+    //         res.sendStatus(400);
+    //     }
+    // })
 }
-
-module.exports = { addRoutes }

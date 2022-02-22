@@ -1,10 +1,11 @@
-const express = require('express');
-const bodyParser = require("body-parser");
-const { addRoutes } = require("./src/routeManager.js")
-const cors = require("cors");
-const { isValidAction, executeAction, getGamestate, isValidID, getSpectatorGamestate } = require("./src/stateMachine.js")
-const schedule = require('node-schedule');
-const { makeBackup, updateCeasefire, addHistoryMessage } = require('./src/database.js');
+import express from "express"
+import * as bodyParser from "body-parser";
+import {doesPlayerExist, getGamestate, handleGameAction} from "./src/stateMachine";
+import {isGameIDIsInUse} from "./src/database";
+import {GameAction, GameActionJSON} from "./src/types";
+import {Contract} from "./src/classes/Contract";
+import {addRoutes} from "./src/routeManager";
+import cors = require("cors");
 
 const http = require('http');
 const socketIO = require("socket.io");
@@ -25,40 +26,48 @@ const io = socketIO(server, {
   }
 });
 
-const socketClients = {}
+const parseJSONAction = (action: GameActionJSON): GameAction => {
+  return {type: action.type, actingPlayerID: action.actingPlayerID, contract: Contract.fromJSON(action.contract)}
+}
 
 io.on('connection', (socket) => {
   socket.on('action', async (msg) => {
-    const { action, actor, targetSpace, upgrades } = msg;
-    //handle action
-    ///check is valid action
-    if (await isValidAction(action, actor, targetSpace, upgrades)) {
-      console.log('action is valid');
-      await executeAction(action, actor, targetSpace, upgrades)
-      console.log('action executed');
-
-      updateAllClientsGamestate();
-    } else {
-      socket.emit('invalid', msg)
-    }
+    const { gameID, action }: { gameID: string, action: GameActionJSON} = msg;
+    //let the game handle the action
+      const parsedJSONAction = parseJSONAction(action)
+      const isActionValid = await handleGameAction(gameID, parsedJSONAction)
+      if (isActionValid) {
+        await updateAllClientsGamestate(socket.gameID);
+      } else {
+        socket.emit('invalid action', msg)
+      }
 
   })
 
   socket.on('register', async (msg) => {
-    if (msg === 'spectator') {
-      socket.spectator = true;
-      console.log('registering spectator')
-    } else {
-      socket.spectator = false;
-      const idIsValid = await isValidID(msg);
-      if (idIsValid) {
-        console.log('registering player', msg)
-        socket.playerId = msg
-      } else {
-        console.log('unlog plaease')
-        socket.emit('unlog')
-      }
+    const {gameID, playerID} = msg
+    if (!await isGameIDIsInUse(gameID)) {
+      socket.disconnect()
     }
+
+    // handle spectators
+    if (playerID === 'spectator') {
+      socket.spectator = true;
+      socket.gameID = gameID
+      console.log('registering spectator')
+      return;
+    }
+
+    // handle returning player
+    if (await doesPlayerExist(gameID, playerID)) {
+      socket.spectator = false;
+      console.log('registering player', msg)
+      socket.playerId = playerID
+      return;
+    }
+
+    socket.emit('unlog')
+    socket.disconnect()
   })
 
   socket.on('message', (msg) => {
@@ -66,35 +75,19 @@ io.on('connection', (socket) => {
   })
 });
 
-async function unlogId(id) {
-  const sockets = await io.fetchSockets()
-  sockets.forEach(async (sock) => {
-    if (sock.playerId === id) {
-      sock.emit('unlog')
-      delete sock.playerId
-      return;
-    }
-  })
-}
-
-async function updateAllClientsGamestate() {
-  const sockets = await io.fetchSockets()
-  sockets.forEach(async (sock) => {
-    if (sock.playerId) {
-      console.log(sock.playerId);
-      playerGamestate = await getGamestate(sock.playerId)
-      sock.emit('gameStateUpdate', playerGamestate)
-    } else if (sock.spectator) {
-      console.log('sending to spectator');
-      spectatorGamestate = await getSpectatorGamestate()
-      sock.emit('gameStateUpdate', spectatorGamestate)
+async function updateAllClientsGamestate(gameId: string) {
+  const gameState = getGamestate(gameId)
+  const sockets = io.fetchSockets()
+  sockets.forEach((socket) => {
+    if (socket.gameID === gameId) {
+      socket.emit("gameStateUpdate", gameState)
     }
   })
 }
 
 app.use(express.static('public'));
 
-addRoutes(app, updateAllClientsGamestate, unlogId)
+addRoutes(app, updateAllClientsGamestate)
 
 app.listen(3001, () => console.log('server started'));
 server.listen(3000, () => console.log('tada'))
