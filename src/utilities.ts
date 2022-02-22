@@ -1,5 +1,5 @@
 
-function generateRandomID(length: number) {
+export function generateRandomID(length: number) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -10,7 +10,3 @@ function generateRandomID(length: number) {
     return result;
 }
 
-
-module.exports = {
-    generateRandomID
-}

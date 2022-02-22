@@ -4,10 +4,10 @@ import {Player} from "./Player";
 import {Contract} from "./Contract";
 
 
-class Game {
+export class Game {
     id: string
     players: Player[]
-    executedContracts: ExecutedContract[]
+    executedContracts: Contract[]
     currentContracts: Contract[]
     started: boolean
 
@@ -18,6 +18,25 @@ class Game {
         this.executedContracts = executedContracts
         this.currentContracts = currentContracts
         this.started = started
+    }
+
+    toJSON(): Object {
+        return {
+            id: this.id,
+            players: this.players.map(p => p.toJSON()),
+            currentContracts: this.currentContracts.map(c => c.toJSON()),
+            executedContracts: this.executedContracts.map(c => c.toJSON()),
+            started: this.started
+        }
+    }
+
+    static fromJSON(json: any): Game {
+        const players = json.players.map((playerJson) => Player.fromJSON(playerJson))
+        const id = json.id
+        const executedContracts = json.executedContracts.map((executedContractJSON) => Contract.fromJSON(executedContractJSON))
+        const currentContracts = json.currentContracts.map((currentContractsJSON) => Contract.fromJSON(currentContractsJSON))
+        const started = json.started
+        return new Game(id, players, currentContracts, executedContracts, started)
     }
 
     startGame(): void {
@@ -42,13 +61,18 @@ class Game {
         this.currentContracts.push(contract)
     }
 
-    removeContract(contract: Contract): void {
-        this.currentContracts = this.currentContracts.filter((contract) => contract.id !=)
+    removeContract(providedContract: Contract): void {
+        this.currentContracts = this.currentContracts.filter((contract) => contract.id != providedContract.id)
+    }
+
+    getContractByID(id: string): Contract | null {
+        return this.currentContracts.find(c => c.id === id)
     }
 
     handleAction(action: GameAction): boolean {
         if (this.isActionValid(action)) {
             this.executeAction(action);
+            return true
         }
         return false
     }
@@ -56,11 +80,23 @@ class Game {
     isActionValid(action: GameAction): boolean {
         switch (action.type) {
             case GameActionType.add:
-                return true
+                const player = this.getPlayerById(action.actingPlayerID)
+                return action.contract.offeredBundle.isSubset(player.resources)
             case GameActionType.fulfill:
-                return true
+                const contract = this.getContractByID(action.contract.id)
+                if (contract) {
+                    // Can't fulfill your own contract
+                    if (contract.offeringPlayerID === action.actingPlayerID) {
+                        return false
+                    }
+                    // Acting player has the resources to offer for this contract
+                    const player = this.getPlayerById(action.actingPlayerID)
+                    return player && contract.desiredBundle.isSubset(player.resources)
+                } else {
+                    return false
+                }
             case GameActionType.rescind:
-                return this.currentContracts.find(c => c.id === action.contract.id)?.playerId === action.actingPlayer
+                return this.getContractByID(action.contract.id)?.offeringPlayerID === action.actingPlayerID
         }
 
         return true;
@@ -97,5 +133,7 @@ class Game {
                 break;
         }
     }
+
+
 }
 
