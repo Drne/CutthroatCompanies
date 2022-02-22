@@ -1,5 +1,8 @@
-const { Contract, ExecutedContract, Player, GameAction, GameActionType} = require("./types");
-const { generateRandomID } = require("./utilities");
+import { GameAction, GameActionType} from "../types";
+import {generateRandomID} from "../utilities";
+import {Player} from "./Player";
+import {Contract} from "./Contract";
+
 
 class Game {
     id: string
@@ -21,10 +24,16 @@ class Game {
         this.started = true
     }
 
+    // Player Methods //
     addPlayer(player: Player): void {
         this.players.push(player)
     }
 
+    getPlayerById(id: string): Player | null {
+        return this.players.find(p => p.id === id)
+    }
+
+    // Contract Methods //
     addContract(contract: Contract): void {
         this.currentContracts.push(contract)
     }
@@ -33,11 +42,11 @@ class Game {
         this.currentContracts = this.currentContracts.filter((contract) => contract.id !=)
     }
 
-    handleAction(action: GameAction): void {
+    handleAction(action: GameAction): boolean {
         if (this.isActionValid(action)) {
             this.executeAction(action);
         }
-
+        return false
     }
 
     isActionValid(action: GameAction): boolean {
@@ -56,13 +65,29 @@ class Game {
     executeAction(action: GameAction): void {
         switch (action.type) {
             case GameActionType.add:
-
-                break;
-            case GameActionType.fulfill:
                 this.addContract(action.contract)
                 break;
+            case GameActionType.fulfill:
+                // give bundle to completing player
+                const completer = this.getPlayerById(action.actingPlayerID)
+                if (completer) {
+                    completer.addResourceBundle(action.contract.offeredBundle)
+                    completer.removeResourceBundle(action.contract.desiredBundle)
+                } else {
+                    throw Error("Unable to find player with ID: " + action.actingPlayerID)
+                }
+                // give bundle to originator player
+                const originator = this.getPlayerById(action.contract.playerID)
+                if (originator) {
+                    completer.addResourceBundle(action.contract.desiredBundle)
+                } else {
+                    throw Error("Unable to find player with ID: " + action.actingPlayerID)
+                }
+                // delete the contract
+                this.removeContract(action.contract)
+                break;
             case GameActionType.rescind:
-                this.
+                this.removeContract(action.contract)
                 break;
             default:
                 break;

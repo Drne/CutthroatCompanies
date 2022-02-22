@@ -1,39 +1,9 @@
-export interface Game {
-    id: string
-    players: Player[]
-    executedContracts: ExecutedContract[]
-    currentContracts: Contract[]
-    started: boolean
-}
-
-interface Player {
-    id: string
-    name: string,
-    logo: string,
-    resources: ResourceBundle
-}
-
-export interface Transaction {
-    seller: any
-    committedResources: Resource[]
-}
-
-export enum Resource {
-    money="money",
-    square="square",
-    circle="circle",
-    triangle="triangle",
-    squareToCircleEngine="squareToCircleEngine",
-    controllingInterest="controllingInterest",
-}
-
-export type ResourceBundle = {
-    [key in keyof typeof Resource]: number
-}
+import {ResourceBundle} from "./classes/ResourceBundle";
 
 export interface Contract {
+    id: string
     offeredBundle: ResourceBundle
-    desiredBundle: ResourceBundle,
+    desiredBundle: ResourceBundle
     alternativeContracts: Contract[]
     // givenOffers: ResourceBundle[], ???
     playerID: string,
@@ -55,8 +25,4 @@ export interface GameAction {
     type: GameActionType
     contract: Contract
     actingPlayerID: string
-}
-
-module.exports = {
-    player: Player
 }
