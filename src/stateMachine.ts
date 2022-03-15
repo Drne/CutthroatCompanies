@@ -10,6 +10,11 @@ export const createNewGame = async (): Promise<string> => {
     return game.id
 }
 
+export const startGame =  async (gameId: string): Promise<void> => {
+    const gameToStart = await getGameByID(gameId)
+    gameToStart.startGame();
+}
+
 export const getGamestate = async (gameId): Promise<Game> => {
     return await getGameState(gameId);
 }
@@ -46,10 +51,10 @@ export async function isNameTaken(gameId, name) {
     return !!matchingUser
 }
 
-export async function restoreFromBackup(gameId: string, time: string) {
-    try {
-
-    } catch (e) {
-
-    }
-}
+// export async function restoreFromBackup(gameId: string, time: string) {
+//     try {
+//
+//     } catch (e) {
+//
+//     }
+// }

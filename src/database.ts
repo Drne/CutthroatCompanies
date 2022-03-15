@@ -4,32 +4,22 @@ import {Player} from "./classes/Player";
 
 const db = new Client();
 
-const createNewGame = (): Game => {
-    return new Game();
-}
-
-const startNewGame =  async (): Promise<Game> => {
-    const game = createNewGame()
-    game.startGame()
-    await db.set(game.id, game)
-    return game;
-}
-
 export const getGameByID = async (id: string): Promise<Game> => {
-    const game = <Game>(await db.get(id))
+    const gameJSON = await db.get(id)
 
-    if (!game) {
+    if (!gameJSON) {
         throw Error("Tried to get invalid game id")
     }
-    return game
+
+    return Game.fromJSON(gameJSON)
 }
 
 export const saveGame = async (game: Game) => {
-    await db.set(game.id, game);
+    await db.set(game.id, game.toJSON());
 }
 
 export const getGameState = async (gameID): Promise<any> => {
-    // TODO: sanitize player IDs from gamestate
+    // TODO: sanitize player IDs and ai state from gamestate
     return await db.get(gameID)
 }
 

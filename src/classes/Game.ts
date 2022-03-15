@@ -1,23 +1,30 @@
-import { GameAction, GameActionType} from "../types";
+import {AvailableResources, GameAction, GameActionType} from "../types";
 import {generateRandomID} from "../utilities";
 import {Player} from "./Player";
 import {Contract} from "./Contract";
+import {AIPlayer} from "./AIPlayer";
+import {MarketPlayer} from "../ai/marketPlayer";
+import {ResourceBundle} from "./ResourceBundle";
 
 
 export class Game {
     id: string
     players: Player[]
+    aiPlayers: AIPlayer[]
     executedContracts: Contract[]
     currentContracts: Contract[]
+    availableResources: AvailableResources
     started: boolean
 
-    constructor(id: string = generateRandomID(5), players = [], executedContracts = [], currentContracts = [], started = false) {
+    constructor(id: string = generateRandomID(5), players = [], executedContracts = [], currentContracts = [], started = false, aiState = {}) {
         this.id = id
-        // TODO: Repopulate with AI players
         this.players = players
         this.executedContracts = executedContracts
         this.currentContracts = currentContracts
         this.started = started
+
+        // populate ai
+        this.aiPlayers.push(new MarketPlayer(this.currentContracts, this.availableResources, aiState['resourceMarket'] ? aiState['resourceMarket'] : {}))
     }
 
     toJSON(): Object {
@@ -26,7 +33,8 @@ export class Game {
             players: this.players.map(p => p.toJSON()),
             currentContracts: this.currentContracts.map(c => c.toJSON()),
             executedContracts: this.executedContracts.map(c => c.toJSON()),
-            started: this.started
+            started: this.started,
+            aiState: this.generateAIState()
         }
     }
 
@@ -36,15 +44,39 @@ export class Game {
         const executedContracts = json.executedContracts.map((executedContractJSON) => Contract.fromJSON(executedContractJSON))
         const currentContracts = json.currentContracts.map((currentContractsJSON) => Contract.fromJSON(currentContractsJSON))
         const started = json.started
-        return new Game(id, players, currentContracts, executedContracts, started)
+        const aiState = json.aiState
+        return new Game(id, players, currentContracts, executedContracts, started, aiState)
+    }
+
+    generateAIState() {
+        const aiState = {}
+        this.aiPlayers.forEach((ai) => {
+            aiState[ai.id] = ai.generatePlayerStateJSON()
+        })
+        return aiState
     }
 
     startGame(): void {
         this.started = true
+
+        // create resource pyramid
+        // TODO
+
+        // populate ai
+        this.aiPlayers.push(new MarketPlayer(this.currentContracts, this.availableResources))
     }
 
     // Player Methods //
     addPlayer(player: Player): void {
+        // create new resource and give player generator
+        // TODO: don't use random string as resource name
+        const newResource = generateRandomID(3)
+        this.availableResources[1].push(newResource)
+        const generatorName = newResource + 'Generator'
+        this.availableResources[-1].push(generatorName)
+
+        player.addResourceBundle(new ResourceBundle({ [generatorName]: 1}))
+
         this.players.push(player)
     }
 
@@ -69,9 +101,22 @@ export class Game {
         return this.currentContracts.find(c => c.id === id)
     }
 
+    // Action methods //
     handleAction(action: GameAction): boolean {
         if (this.isActionValid(action)) {
             this.executeAction(action);
+
+            let responseActions: GameAction[] = []
+
+            // AIs respond to the action
+            this.aiPlayers.forEach((aiPlayer) => {
+                const AIResponseActions: GameAction[] = aiPlayer.respondToAction(action, this.currentContracts, this.availableResources)
+                responseActions = responseActions.concat(AIResponseActions)
+            })
+            responseActions.forEach((responseAction) => {
+                this.executeAction(responseAction)
+            })
+
             return true
         }
         return false

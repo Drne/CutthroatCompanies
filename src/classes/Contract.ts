@@ -1,4 +1,5 @@
 import {ResourceBundle} from "./ResourceBundle";
+import {generateRandomID} from "../utilities";
 
 export class Contract {
     id: string
@@ -7,8 +8,8 @@ export class Contract {
     alternativeContracts: Contract[]
     offeringPlayerID: string
 
-    constructor(id: string, offeredBundle: ResourceBundle, desiredBundle: ResourceBundle, alternativeContracts: Contract[], playerID: string) {
-        this.id = id;
+    constructor(offeredBundle: ResourceBundle, desiredBundle: ResourceBundle, playerID: string, id?, alternativeContracts: Contract[] = []) {
+        this.id = id ? id : generateRandomID(5);
         this.offeredBundle = offeredBundle;
         this.desiredBundle = desiredBundle;
         this.alternativeContracts = alternativeContracts;
@@ -30,6 +31,6 @@ export class Contract {
         const desiredBundle = ResourceBundle.fromJson(json.desiredBundle)
         const alternativeContracts = json.alternativeContracts.map((altContract) => Contract.fromJSON(altContract))
         const offeringPlayer = json.offeringPlayerID
-        return new Contract(id, offeredBundle, desiredBundle, alternativeContracts, offeringPlayer)
+        return new Contract(offeredBundle, desiredBundle, offeringPlayer, id, alternativeContracts)
     }
 }

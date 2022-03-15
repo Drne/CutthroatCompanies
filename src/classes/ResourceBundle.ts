@@ -1,13 +1,15 @@
 import {BundleType} from "../types";
 
-export enum Resource {
-    money="money",
-    square="square",
-    circle="circle",
-    triangle="triangle",
-    squareToCircleEngine="squareToCircleEngine",
-    controllingInterest="controllingInterest",
-}
+// export enum Resource {
+//     money="money",
+//     square="square",
+//     circle="circle",
+//     triangle="triangle",
+//     squareToCircleEngine="squareToCircleEngine",
+//     controllingInterest="controllingInterest",
+// }
+
+export type Resource = string
 
 export class ResourceBundle {
     bundle: BundleType
@@ -62,5 +64,15 @@ export class ResourceBundle {
         for (const [resource, amount] of Object.entries(bundle)) {
             this.modifyResource(<Resource>resource, -1 * <number>amount)
         }
+    }
+
+    contains(resource, amount = 1): boolean {
+        return this.bundle[resource] && this.bundle[resource] >= amount
+    }
+
+    containsAny(resources: Resource[]): boolean {
+        return resources.some((resource) => {
+            this.contains(resource)
+        })
     }
 }

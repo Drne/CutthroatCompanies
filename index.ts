@@ -90,4 +90,4 @@ app.use(express.static('public'));
 addRoutes(app, updateAllClientsGamestate)
 
 app.listen(3001, () => console.log('server started'));
-server.listen(3000, () => console.log('tada'))
+server.listen(3000, () => console.log('Websockets listening'))

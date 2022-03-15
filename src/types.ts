@@ -1,6 +1,13 @@
 import {Resource, ResourceBundle} from "./classes/ResourceBundle";
 import {Contract} from "./classes/Contract";
 
+// >0 -> resource by tier
+// 0 -> money
+// -1 -> generators
+// -2 -> engines
+// -3 -> shares
+export type AvailableResources = Record<number, Resource[]>
+
 export interface ExecutedContract {
     executedOffer: ResourceBundle,
     givingPlayer: string,
