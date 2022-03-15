@@ -1,8 +1,8 @@
-import {Client} from "@replit/database";
 import {Game} from "./classes/Game";
 import {Player} from "./classes/Player";
+const Database = require("@replit/database")
 
-const db = new Client();
+const db = new Database();
 
 export const getGameByID = async (id: string): Promise<Game> => {
     const gameJSON = await db.get(id)
