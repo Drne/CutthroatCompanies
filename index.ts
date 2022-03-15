@@ -6,9 +6,8 @@ import {GameAction, GameActionJSON} from "./src/types";
 import {Contract} from "./src/classes/Contract";
 import {addRoutes} from "./src/routeManager";
 import cors = require("cors");
-
-const http = require('http');
-const socketIO = require("socket.io");
+import {Server} from "socket.io";
+import { createServer } from 'http';
 
 const app = express();
 
@@ -18,8 +17,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors())
 
 // websocket
-const server = http.createServer(app);
-const io = socketIO(server, {
+const server = createServer(app);
+const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
@@ -30,7 +29,7 @@ const parseJSONAction = (action: GameActionJSON): GameAction => {
   return {type: action.type, actingPlayerID: action.actingPlayerID, contract: Contract.fromJSON(action.contract)}
 }
 
-io.on('connection', (socket) => {
+io.on('connection', (socket: any) => {
   socket.on('action', async (msg) => {
     const { gameID, action }: { gameID: string, action: GameActionJSON} = msg;
     //let the game handle the action
@@ -77,8 +76,8 @@ io.on('connection', (socket) => {
 
 async function updateAllClientsGamestate(gameId: string) {
   const gameState = getGamestate(gameId)
-  const sockets = io.fetchSockets()
-  sockets.forEach((socket) => {
+  const sockets = await io.fetchSockets()
+  sockets.forEach((socket: any) => {
     if (socket.gameID === gameId) {
       socket.emit("gameStateUpdate", gameState)
     }
