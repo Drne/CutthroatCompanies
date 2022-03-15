@@ -6,18 +6,6 @@ export const addRoutes = (app, updateUsers) => {
         res.send('Cutthroat Companies!');
     });
 
-    // Get game state
-    app.get('/api/game/:gameId', async (req, res) => {
-        const game = await getGameByID(req.params.gameId)
-        if (!!game) {
-            res.sendStatus(404)
-            return;
-        }
-
-        const gameState = getGameState(req.params.gameID)
-        res.send(gameState)
-    });
-
     // Create new game
     app.post('/api/game/newGame', async (req, res) => {
         try {
@@ -27,6 +15,24 @@ export const addRoutes = (app, updateUsers) => {
             console.log(error)
             res.sendStatus(500);
         }
+    });
+
+    // Get game state
+    app.get('/api/game/:gameId', async (req, res) => {
+        try {
+            const game = await getGameByID(req.params.gameId)
+            if (!!game) {
+                res.sendStatus(404)
+                return;
+            }
+
+            const gameState = getGameState(req.params.gameID)
+            res.send(gameState)
+        } catch (e) {
+            console.log(e);
+            res.sendStatus(500);
+        }
+
     });
 
     // Add new player to game
