@@ -26,6 +26,7 @@ export const addPlayer = async (gameID, playerName, playerLogo): Promise<string>
         playerID = generateRandomID(5)
     }
 
+    console.log('making new player')
     const game = await getGameByID(gameID)
     const newPlayer = new Player(playerID, playerName, playerLogo)
     game.addPlayer(newPlayer)

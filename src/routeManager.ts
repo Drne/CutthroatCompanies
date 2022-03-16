@@ -7,7 +7,7 @@ export const addRoutes = (app, updateUsers) => {
     });
 
     // Create new game
-    app.post('/api/game/newGame', async (req, res) => {
+    app.put('/api/game/newGame', async (req, res) => {
         try {
             const gameId = await createNewGame()
             res.send(gameId)
@@ -18,25 +18,18 @@ export const addRoutes = (app, updateUsers) => {
     });
 
     // Get game state
-    app.get('/api/game/:gameId', async (req, res) => {
+    app.get('/api/game/gameId/:gameId', async (req, res) => {
         try {
-            const game = await getGameByID(req.params.gameId)
-            if (!!game) {
-                res.sendStatus(404)
-                return;
-            }
-
-            const gameState = getGameState(req.params.gameID)
+            const gameState = await getGameState(req.params.gameId)
             res.send(gameState)
         } catch (e) {
             console.log(e);
-            res.sendStatus(500);
+            res.sendStatus(404);
         }
-
     });
 
     // Add new player to game
-    app.put('/api/game/:gameId/newPlayer', async (req, res) => {
+    app.put('/api/game/newPlayer/:gameId', async (req, res) => {
         try {
             const { name, logo} = req.body
             const gameId = req.params.gameId;
@@ -50,7 +43,7 @@ export const addRoutes = (app, updateUsers) => {
     });
 
     // Start game
-    app.put('/api/game/:gameId/start', async (req, res) => {
+    app.put('/api/game/start/:gameId', async (req, res) => {
         try {
             const gameId = req.params.gameID
             await startGame(gameId)
@@ -62,7 +55,7 @@ export const addRoutes = (app, updateUsers) => {
     })
 
     // check valid game ID
-    app.get('/api/game/:gameId', async (req, res) => {
+    app.get('/api/game/isValid/:gameId', async (req, res) => {
         const gameId = req.params.gameId
         const isGameIdInUse = await isGameIDIsInUse(gameId)
         if (isGameIdInUse) {
@@ -74,7 +67,7 @@ export const addRoutes = (app, updateUsers) => {
     })
 
     // check if name is taken
-    app.get('/api/game/:gameId/player/:playerId', async (req, res) => {
+    app.get('/api/game/isPlayerValid/:gameId/player/:playerId', async (req, res) => {
         const isTaken = await isNameTaken(req.params.gameId, req.params.name);
         if (!isTaken) {
             res.sendStatus(200);

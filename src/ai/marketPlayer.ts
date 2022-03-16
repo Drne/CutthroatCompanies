@@ -17,10 +17,12 @@ export class MarketPlayer extends AIPlayer{
         //TODO: Why is key a string?
         if (Object.entries(valueMap).length === 0) {
             Object.entries(availableResources).forEach(([key, value]: [string, Resource[]]) => {
-                const startingValue = {currentBuyValue: parseInt(key) * 5, currentSellValue: parseInt(key) * 5}
+              if (parseInt(key) > 0) {
+                               const startingValue = {currentBuyValue: parseInt(key) * 5, currentSellValue: parseInt(key) * 5}
                 value.forEach((resource) => {
                     this.valueMap[resource] = startingValue
-                })
+                }) 
+              }
             })
         }
     }

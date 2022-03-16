@@ -17,7 +17,8 @@ export class Player {
         return {
             id: this.id,
             name: this.name,
-            resources: this.resources
+            resources: this.resources.toJSON(),
+            logo: this.logo
         }
     }
 

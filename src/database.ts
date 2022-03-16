@@ -11,10 +11,12 @@ export const getGameByID = async (id: string): Promise<Game> => {
         throw Error("Tried to get invalid game id")
     }
 
+    console.log('fetched game with id: ' + gameJSON.id)
     return Game.fromJSON(gameJSON)
 }
 
 export const saveGame = async (game: Game) => {
+    console.log(game.toJSON())
     await db.set(game.id, game.toJSON());
 }
 
@@ -43,7 +45,7 @@ export async function restoreFromBackup(gameId, time) {
 
 export async function isPlayerIDIsInUse(gameId, playerId): Promise<boolean> {
     const game = await getGameByID(gameId)
-    return !!game.players.filter((player: Player) => player.id === playerId)
+    return !!game.players.find((player: Player) => player.id === playerId)
 }
 
 export async function isGameIDIsInUse(gameId): Promise<boolean> {

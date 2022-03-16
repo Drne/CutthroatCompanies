@@ -6,6 +6,13 @@ import {AIPlayer} from "./AIPlayer";
 import {MarketPlayer} from "../ai/marketPlayer";
 import {ResourceBundle} from "./ResourceBundle";
 
+const startingResources = {
+  1: [],
+  0: ['money'],
+  '-1': [],
+  '-2': [],
+  '-3': [],
+}
 
 export class Game {
     id: string
@@ -16,12 +23,14 @@ export class Game {
     availableResources: AvailableResources
     started: boolean
 
-    constructor(id: string = generateRandomID(5), players = [], executedContracts = [], currentContracts = [], started = false, aiState = {}) {
+    constructor(id: string = generateRandomID(5), players = [], executedContracts = [], currentContracts = [], started = false, aiState = {}, availableResources = startingResources) {
         this.id = id
         this.players = players
         this.executedContracts = executedContracts
         this.currentContracts = currentContracts
         this.started = started
+        this.aiPlayers = []
+        this.availableResources = availableResources
 
         // populate ai
         this.aiPlayers.push(new MarketPlayer(this.currentContracts, this.availableResources, aiState['resourceMarket'] ? aiState['resourceMarket'] : {}))
@@ -34,7 +43,8 @@ export class Game {
             currentContracts: this.currentContracts.map(c => c.toJSON()),
             executedContracts: this.executedContracts.map(c => c.toJSON()),
             started: this.started,
-            aiState: this.generateAIState()
+            aiState: this.generateAIState(),
+            availableResources: this.availableResources
         }
     }
 
@@ -45,7 +55,8 @@ export class Game {
         const currentContracts = json.currentContracts.map((currentContractsJSON) => Contract.fromJSON(currentContractsJSON))
         const started = json.started
         const aiState = json.aiState
-        return new Game(id, players, currentContracts, executedContracts, started, aiState)
+        const availableResources = json.availableResources
+        return new Game(id, players, currentContracts, executedContracts, started, aiState, availableResources)
     }
 
     generateAIState() {
@@ -72,7 +83,7 @@ export class Game {
         // TODO: don't use random string as resource name
         const newResource = generateRandomID(3)
         this.availableResources[1].push(newResource)
-        const generatorName = newResource + 'Generator'
+        const generatorName = newResource + '-generator'
         this.availableResources[-1].push(generatorName)
 
         player.addResourceBundle(new ResourceBundle({ [generatorName]: 1}))
